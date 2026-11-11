@@ -26,9 +26,9 @@ jobs:
           ANDROID_SIGNING: ${{ secrets.ANDROID_SIGNING }}
         run: |
           if [ -n "$ANDROID_SIGNING" ]; then
-            PASS="${ANDROID_SIGNING%%:*}"
+            PASS="$(printf '%s' "${ANDROID_SIGNING%%:*}" | tr -d ' \r\n\t')"
             echo "::add-mask::$PASS"
-            printf '%s' "${ANDROID_SIGNING#*:}" | base64 -d > "$RUNNER_TEMP/foodlee.keystore"
+            printf '%s' "${ANDROID_SIGNING#*:}" | tr -d ' \r\n\t' | base64 -di > "$RUNNER_TEMP/foodlee.keystore"
             {
               echo "ANDROID_KEYSTORE_FILE=$RUNNER_TEMP/foodlee.keystore"
               echo "ANDROID_KEYSTORE_PASSWORD=$PASS"
