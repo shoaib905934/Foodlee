@@ -17,10 +17,7 @@ Open the link above on an Android phone, download `foodlee.apk`, open it and all
 for your browser when asked.
 
 ## Signing key
-Until a signing key is added, GitHub signs each build with a temporary test key. Those builds install fine,
-but a newer build cannot update an older one: the phone must uninstall the old app first.
-
-To fix that (and before publishing on Google Play), create one private signing key and add it to
-GitHub → Settings → Secrets and variables → Actions as:
-`ANDROID_KEYSTORE_B64` (the keystore file, base64-encoded), `ANDROID_KEYSTORE_PASSWORD`,
-`ANDROID_KEY_ALIAS` and `ANDROID_KEY_PASSWORD`. Never commit the key or its passwords to this repository.
+The app is signed with a private Foodlee key stored only as the GitHub secret `ANDROID_SIGNING`
+(Settings → Secrets and variables → Actions). It is never stored in this repository.
+Until that secret exists, GitHub signs builds with a temporary test key, and a newer build cannot update an older one.
+Keep your backup copy of the key safe: the same key is needed for every future update and for the Google Play Store.

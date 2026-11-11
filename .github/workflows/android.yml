@@ -23,18 +23,24 @@ jobs:
           gradle-version: "8.9"
       - name: Load the signing key (if set up)
         env:
-          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_B64 }}
+          ANDROID_SIGNING: ${{ secrets.ANDROID_SIGNING }}
         run: |
-          if [ -n "$KEYSTORE_B64" ]; then
-            echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/foodlee.keystore"
-            echo "ANDROID_KEYSTORE_FILE=$RUNNER_TEMP/foodlee.keystore" >> "$GITHUB_ENV"
+          if [ -n "$ANDROID_SIGNING" ]; then
+            PASS="${ANDROID_SIGNING%%:*}"
+            echo "::add-mask::$PASS"
+            printf '%s' "${ANDROID_SIGNING#*:}" | base64 -d > "$RUNNER_TEMP/foodlee.keystore"
+            {
+              echo "ANDROID_KEYSTORE_FILE=$RUNNER_TEMP/foodlee.keystore"
+              echo "ANDROID_KEYSTORE_PASSWORD=$PASS"
+              echo "ANDROID_KEY_PASSWORD=$PASS"
+              echo "ANDROID_KEY_ALIAS=foodlee"
+            } >> "$GITHUB_ENV"
+            echo "Signing with the Foodlee key."
+          else
+            echo "No ANDROID_SIGNING secret yet: using a temporary test key."
           fi
       - name: Build the APK
         working-directory: android
-        env:
-          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: gradle --no-daemon assembleRelease
       - name: Name the file
         run: cp android/app/build/outputs/apk/release/app-release.apk foodlee.apk
