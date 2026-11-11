@@ -26,9 +26,19 @@ jobs:
           ANDROID_SIGNING: ${{ secrets.ANDROID_SIGNING }}
         run: |
           if [ -n "$ANDROID_SIGNING" ]; then
-            PASS="$(printf '%s' "${ANDROID_SIGNING%%:*}" | tr -d ' \r\n\t')"
+            # Tidy common paste slips: spaces, line breaks, quotes, a leading "ANDROID_SIGNING=".
+            V="$(printf '%s' "$ANDROID_SIGNING" | tr -d ' \r\n\t"'"'"'')"
+            V="${V#ANDROID_SIGNING=}"
+            case "$V" in *:*) ;; *) echo "::error title=Signing key format::The ANDROID_SIGNING secret has no ':' between the password and the key (it is ${#V} characters long). Paste the full line again."; exit 1;; esac
+            PASS="${V%%:*}"; B64="${V#*:}"
             echo "::add-mask::$PASS"
-            printf '%s' "${ANDROID_SIGNING#*:}" | tr -d ' \r\n\t' | base64 -di > "$RUNNER_TEMP/foodlee.keystore"
+            B64="$(printf '%s' "$B64" | tr '_-' '/+' | tr -cd 'A-Za-z0-9+/=')"
+            if ! printf '%s' "$B64" | base64 -d > "$RUNNER_TEMP/foodlee.keystore" 2>/dev/null || [ ! -s "$RUNNER_TEMP/foodlee.keystore" ]; then
+              echo "::error title=Signing key format::The key part of ANDROID_SIGNING is not valid (password part ${#PASS} chars, key part ${#B64} chars, starts '${B64:0:3}'). Paste the full line again."; exit 1
+            fi
+            if ! keytool -list -keystore "$RUNNER_TEMP/foodlee.keystore" -storepass "$PASS" -alias foodlee >/dev/null 2>&1; then
+              echo "::error title=Signing key password::The key decoded (key part ${#B64} chars, starts '${B64:0:3}') but the password or alias does not match (password part ${#PASS} chars)."; exit 1
+            fi
             {
               echo "ANDROID_KEYSTORE_FILE=$RUNNER_TEMP/foodlee.keystore"
               echo "ANDROID_KEYSTORE_PASSWORD=$PASS"
