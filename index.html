@@ -554,7 +554,7 @@ function applySheet(rows){ if (!Array.isArray(rows)) return; rows.forEach(r => {
   P.forEach(p => { const mine = rows.filter(r => r.id === p.id); if (mine.length) p.off = mine.every(r => String(r.available).toLowerCase() === "false" || r.available === false) });
   pricePlans() }
 applySheet(store.get("sheet", null));
-async function loadSheet(){ if (!SHEET_URL) return; try { const r = await fetch(SHEET_URL + "?action=products"); const j = await r.json(); if (j && j.products) { store.set("sheet", j.products); applySheet(j.products); render() } } catch(e){} }
+async function loadSheet(){ if (!SHEET_URL) return; try { if (Date.now() - (+store.get("sheetAt") || 0) < 300000 && store.get("sheet")) return; const r = await fetch(SHEET_URL + "?action=products"); const j = await r.json(); if (j && j.products) { store.set("sheet", j.products); store.set("sheetAt", Date.now()); applySheet(j.products); render() } } catch(e){} }
 async function sendOrder(o){ if (!SHEET_URL) return; try { const r = await fetch(SHEET_URL, { method:"POST", body: JSON.stringify({ ...o, payStatus: o.payStatus || "", itemsText: o.items.map(i => i.n + " x " + i.name + " (" + i.label + ")").join("; "), map: o.loc ? "https://maps.google.com/?q=" + o.loc : "" }) });
     const j = await r.json(); o.sent = !!(j && j.ok) } catch(e){ o.sent = false } save(); render(); if (o.sent) toast("Foodlee has your order"); }
 async function sendUpdate(body){ if (!SHEET_URL) return false; try { const r = await fetch(SHEET_URL, { method:"POST", body: JSON.stringify(body) }); const j = await r.json(); return !!(j && j.ok) } catch(e){ return false } }
@@ -1019,6 +1019,9 @@ document.addEventListener("keydown", ev => { if (ev.key === "Escape" && (S.sheet
 addEventListener("hashchange", () => { vt(() => { S.stag = true; S.sheet = null; S.planSheet = null; S.pay = S.payNext || null; S.payNext = null; render(); scrollTo(0, 0) }); if (route() === "orders") loadStatus() });
 render();
 loadSheet(); loadStatus();
+/* busy moments: orders that could not be sent are retried automatically every 20 seconds */
+function retryOrders(){ S.orders.filter(o => o.sent === false && (o.tries = (o.tries || 0) + 1) <= 45).forEach(o => { delete o.sent; sendOrder(o) }) }
+setTimeout(retryOrders, 3000); setInterval(retryOrders, 20000);
 if ("serviceWorker" in navigator && location.protocol === "https:") addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
 
 /* ---------- iPhone app: install Foodlee to the home screen ---------- */

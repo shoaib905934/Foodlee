@@ -105,10 +105,12 @@ function doGet(e) {
     return json_({ status: out });
   }
   if (a === "orders") return json_({ ok: false, error: "Use the order desk to sign in." });
+  var hit = cache_().get("products"); if (hit) return ContentService.createTextOutput(hit).setMimeType(ContentService.MimeType.JSON);
   var p = ss.getSheetByName("Products"); if (!p || p.getLastRow() < 2) return json_({ products: [] });
   var prods = p.getRange(2, 1, p.getLastRow() - 1, 6).getValues().filter(function (r) { return r[0]; })
     .map(function (r) { return { id: String(r[0]), size: String(r[3]), price: Number(r[4]), available: r[5] !== false && String(r[5]).toLowerCase() !== "false" }; });
-  return json_({ products: prods });
+  var out = JSON.stringify({ products: prods }); try { cache_().put("products", out, 60); } catch (x) {}
+  return ContentService.createTextOutput(out).setMimeType(ContentService.MimeType.JSON);
 }
 
 function deskData_(ss) {
@@ -139,7 +141,7 @@ function doPost(e) {
     if (!/^\d{10}$/.test(ph) || !String(o.name || "").trim() || String(o.name).length > 80 || !/^\d{6}$/.test(String(o.pin || "").trim()) ||
         String(o.addr || "").trim().length < 5 || !/^FL-\d{6}$/.test(String(o.id || "")) || !(Number(o.total) > 0 && Number(o.total) < 100000) ||
         !Array.isArray(o.items) || !o.items.length || o.items.length > 60) return json_({ ok: false, error: "Please check your order details." });
-    if (!rate_("order:" + ph, 5, 600) || !rate_("orders:all", 80, 600)) return json_({ ok: false, error: "Too many orders right now. Please wait a few minutes or contact us." });
+    if (!rate_("order:" + ph, 5, 600) || !rate_("orders:all", 250, 600)) return json_({ ok: false, error: "Too many orders right now. Please wait a few minutes or contact us." });
   }
   if (a === "contact") {
     if (!String(o.message || "").trim() || String(o.message).length > 3000) return json_({ ok: false, error: "Please write a message." });
