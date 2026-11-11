@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Order desk · Foodlee</title><meta name="robots" content="noindex,nofollow"><meta name="theme-color" content="#211710">
+<link rel="icon" href="icons/favicon.png" type="image/png"><link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,700&family=Manrope:wght@500;600;700;800&display=swap">
+<style>
+:root{--bg:#F6F1E8;--surface:#FFFFFF;--sunk:#EFE7DA;--ink:#211710;--muted:#6F5F52;--line:#E4D8C5;--brand:#DA582F;--ok:#2C7A4B;--warn:#B26B00;--bad:#B3261E;
+  --display:'Fraunces',Georgia,serif;--body:'Manrope',system-ui,-apple-system,'Segoe UI',sans-serif}
+@media (prefers-color-scheme:dark){:root{--bg:#120D0A;--surface:#1E1611;--sunk:#18120E;--ink:#F5EBDB;--muted:#AE9E8F;--line:#33271E;--brand:#E8693E;--ok:#6FCB94;--warn:#E8B44A;--bad:#F08A80;color-scheme:dark}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.45}
+button,select{font:inherit;color:inherit;cursor:pointer}a{color:inherit}
+.wrap{max-width:1100px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+header{position:sticky;top:0;z-index:5;background:var(--ink);color:var(--bg)}
+header .wrap{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-block:12px}
+header h1{margin:0;font-family:var(--display);font-size:22px}header h1 small{font-family:var(--body);font-size:12px;opacity:.7;font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-left:8px}
+.live{display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:700;opacity:.85}.live i{width:9px;height:9px;border-radius:50%;background:#6FCB94;box-shadow:0 0 0 0 #6FCB94;animation:pulse 2s infinite}
+@keyframes pulse{70%{box-shadow:0 0 0 9px transparent}}
+main{padding-block:18px 60px;display:flex;flex-direction:column;gap:16px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px}.stat b{display:block;font-family:var(--display);font-size:28px;font-variant-numeric:tabular-nums}.stat span{color:var(--muted);font-size:12.5px;font-weight:700}
+.tabs{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none}.tabs::-webkit-scrollbar{display:none}
+.tab{flex:none;border:1px solid var(--line);background:var(--surface);border-radius:99px;padding:8px 14px;font-weight:700;font-size:13.5px}
+.tab[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}.tab em{font-style:normal;opacity:.65;margin-left:4px}
+.list{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px}
+.o{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:14px 16px;display:flex;flex-direction:column;gap:9px;min-width:0}
+.o.new{border-color:var(--brand);box-shadow:0 0 0 2px color-mix(in srgb,var(--brand) 30%,transparent)}
+.oh{display:flex;justify-content:space-between;gap:10px;align-items:baseline}.oh b{font-size:16px}.oh span{color:var(--muted);font-size:12.5px;white-space:nowrap}
+.pills{display:flex;gap:6px;flex-wrap:wrap}.pill{font-size:12px;font-weight:800;border-radius:99px;padding:4px 10px;background:var(--sunk)}
+.pill.warn{background:color-mix(in srgb,var(--warn) 18%,transparent);color:var(--warn)}.pill.ok{background:color-mix(in srgb,var(--ok) 16%,transparent);color:var(--ok)}.pill.bad{background:color-mix(in srgb,var(--bad) 14%,transparent);color:var(--bad)}.pill.brand{background:var(--brand);color:#fff}
+.items{background:var(--sunk);border-radius:12px;padding:9px 11px;font-size:14px;white-space:pre-line}
+.who{font-size:14px}.who b{font-size:15px}.who .addr{color:var(--muted);word-break:break-word}
+.total{display:flex;justify-content:space-between;align-items:center;font-weight:800;font-size:17px;font-variant-numeric:tabular-nums}
+.acts{display:flex;gap:6px;flex-wrap:wrap}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:99px;padding:8px 13px;font-weight:800;font-size:13px;text-decoration:none;display:inline-flex;align-items:center;gap:6px}
+.btn.main{background:var(--brand);border-color:var(--brand);color:#fff}.btn.dark{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+.btn:disabled{opacity:.5;cursor:wait}
+select{border:1px solid var(--line);background:var(--surface);border-radius:99px;padding:8px 12px;font-weight:700;font-size:13px}
+.login{max-width:420px;margin:12vh auto 0;background:var(--surface);border:1px solid var(--line);border-radius:22px;padding:24px;display:flex;flex-direction:column;gap:12px}
+.login h2{margin:0;font-family:var(--display);font-size:28px}.login p{margin:0;color:var(--muted)}
+.login input{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:12px}
+.err{color:var(--bad);font-weight:700;font-size:14px}.muted{color:var(--muted)}
+.empty{border:1.5px dashed var(--line);border-radius:18px;padding:34px;text-align:center;color:var(--muted)}
+.msg{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:12px 14px}.msg p{margin:6px 0 0;white-space:pre-line}
+.bar{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+:focus-visible{outline:2.5px solid var(--brand);outline-offset:2px}
+</style></head>
+<body>
+<header><div class="wrap"><h1>Foodlee<small>Order desk</small></h1><div class="live" id="live" hidden><i></i><span id="liveTxt">Live</span></div></div></header>
+<div class="wrap" id="app"></div>
+<script src="config.js"></script>
+<script>
+const C = window.FOODLEE || {}, URL_ = C.sheetUrl, $ = s => document.querySelector(s);
+const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const rs = n => "₹" + Math.round(Number(n) || 0).toLocaleString("en-IN");
+const FLOW = ["New", "Confirmed", "Packed", "Out for delivery", "Delivered"];
+const NEXT = { "New":"Confirm", "Confirmed":"Mark packed", "Packed":"Out for delivery", "Out for delivery":"Mark delivered" };
+const MSG = { "Confirmed":"Hi {n}, your Foodlee order {id} is confirmed. Delivery: {slot}. Thank you!", "Packed":"Hi {n}, your Foodlee order {id} is packed and will leave soon.",
+  "Out for delivery":"Hi {n}, your Foodlee order {id} is out for delivery. Our rider will call you shortly.", "Delivered":"Hi {n}, your Foodlee order {id} has been delivered. Enjoy! Reply here if anything isn’t right." };
+let key = ""; try { key = localStorage.getItem("foodlee:adminKey") || "" } catch(e){}
+let D = { orders: [], messages: [] }, filter = "Open", seen = null, busy = {}, timer = null, err = "";
+
+function login(){ $("#app").innerHTML = `<form class="login" id="lf"><h2>Order desk</h2>
+  ${URL_ ? `<p>Sign in with the admin key that was emailed to you when you set up the order sheet.</p>
+  <label for="k" class="muted" style="font-size:13px;font-weight:700">Admin key</label><input id="k" autocomplete="current-password" required>
+  <div class="err" id="le">${esc(err)}</div><button class="btn main" style="justify-content:center;padding:12px">Open order desk</button>`
+  : `<p>The order sheet isn’t connected yet. Add its web-app link as <b>sheetUrl</b> in <code>config.js</code>, following <code>backend/SETUP.md</code>.</p>`}</form>`;
+  const f = $("#lf"); if (f) f.onsubmit = ev => { ev.preventDefault(); key = $("#k").value.trim(); load(true) } }
+
+async function load(first){
+  try { const r = await fetch(URL_ + "?action=orders&key=" + encodeURIComponent(key)); const j = await r.json();
+    if (!j.ok) { err = "That key didn’t work. Check the email titled “Your Foodlee order desk key”."; key = ""; try { localStorage.removeItem("foodlee:adminKey") } catch(e){} clearInterval(timer); return login() }
+    try { localStorage.setItem("foodlee:adminKey", key) } catch(e){}
+    const ids = new Set(j.orders.map(o => o["Order ID"]));
+    if (seen) { const fresh = j.orders.filter(o => !seen.has(o["Order ID"])); if (fresh.length) alertNew(fresh) }
+    seen = ids; D = j; $("#live").hidden = false; $("#liveTxt").textContent = "Live · updated " + new Date().toLocaleTimeString("en-IN", { hour:"numeric", minute:"2-digit" }); draw();
+    if (first) { clearInterval(timer); timer = setInterval(() => load(false), 20000); askNotify() }
+  } catch(e){ $("#liveTxt") && ($("#liveTxt").textContent = "Offline · retrying"); if (first) { err = "Couldn’t reach the order sheet. Check your internet and the sheetUrl in config.js."; login() } } }
+
+function askNotify(){ if ("Notification" in window && Notification.permission === "default") Notification.requestPermission().catch(() => {}) }
+function beep(){ try { const a = new (window.AudioContext || window.webkitAudioContext)(), t = a.currentTime; [0, .18, .36].forEach((d, i) => { const o = a.createOscillator(), g = a.createGain(); o.frequency.value = [880, 1175, 1568][i]; g.gain.setValueAtTime(.0001, t + d); g.gain.exponentialRampToValueAtTime(.3, t + d + .02); g.gain.exponentialRampToValueAtTime(.0001, t + d + .16); o.connect(g).connect(a.destination); o.start(t + d); o.stop(t + d + .18) }) } catch(e){} }
+function alertNew(list){ beep(); document.title = "(" + list.length + ") New order · Foodlee";
+  list.forEach(o => { try { if (Notification.permission === "granted") new Notification("New order " + o["Order ID"] + " · " + rs(o["Total (₹)"]), { body: o["Name"] + " · " + o["Area"] + "\n" + String(o["Items"]).split("; ").join(", "), icon: "icons/icon-192.png", tag: o["Order ID"] }) } catch(e){} }) }
+addEventListener("focus", () => { document.title = "Order desk · Foodlee" });
+
+const isOpen = o => !["Delivered", "Cancelled"].includes(o["Status"]);
+const today = o => new Date(o["Time"]).toDateString() === new Date().toDateString();
+function payPill(p){ const cls = /^Paid/.test(p) ? "ok" : /verified|Awaiting/.test(p) ? "warn" : /Refund/.test(p) ? "bad" : ""; return p ? `<span class="pill ${cls}">${esc(p)}</span>` : "" }
+function waLink(o, status){ const ph = String(o["Phone"]).replace(/\D/g, ""), n = ph.length === 10 ? "91" + ph : ph;
+  const t = (MSG[status] || "Hi {n}, this is Foodlee about your order {id}.").replace("{n}", String(o["Name"]).split(" ")[0]).replace("{id}", o["Order ID"]).replace("{slot}", o["Delivery slot"]);
+  return "https://wa.me/" + n + "?text=" + encodeURIComponent(t) }
+
+function card(o){ const id = o["Order ID"], st = o["Status"], t = new Date(o["Time"]), nx = NEXT[st];
+  return `<article class="o ${st === "New" ? "new" : ""}">
+  <div class="oh"><b>${esc(id)}</b><span>${t.toLocaleDateString("en-IN", { day:"numeric", month:"short" })}, ${t.toLocaleTimeString("en-IN", { hour:"numeric", minute:"2-digit" })}</span></div>
+  <div class="pills"><span class="pill ${st === "New" ? "brand" : st === "Delivered" ? "ok" : st === "Cancelled" ? "bad" : ""}">${esc(st)}</span>${payPill(o["Payment"])}${o["UPI ref"] ? `<span class="pill">UPI ref ${esc(o["UPI ref"])}</span>` : ""}${o["Repeat monthly"] === "Yes" ? `<span class="pill">Monthly</span>` : ""}</div>
+  <div class="items">${esc(String(o["Items"]).split("; ").join("\n"))}</div>
+  <div class="total"><span>${rs(o["Total (₹)"])}</span><span class="muted" style="font-size:13px;font-weight:700">${esc(o["Pay with"])}</span></div>
+  <div class="who"><b>${esc(o["Name"])}</b> · <a href="tel:${esc(o["Phone"])}">${esc(o["Phone"])}</a><div class="addr">${esc(o["Address"])}, ${esc(o["Area"])}${o["Landmark"] ? " · near " + esc(o["Landmark"]) : ""} · ${esc(o["Pincode"])}</div><div class="muted" style="font-size:13px">Delivery: ${esc(o["Delivery slot"])}</div></div>
+  <div class="acts">
+  ${nx ? `<button class="btn main" data-set="${esc(id)}" data-status="${FLOW[FLOW.indexOf(st) + 1]}" ${busy[id] ? "disabled" : ""}>${nx}</button>` : ""}
+  ${/verified|Awaiting/.test(o["Payment"]) ? `<button class="btn dark" data-set="${esc(id)}" data-payment="Paid" ${busy[id] ? "disabled" : ""}>Mark paid</button>` : ""}
+  <a class="btn" href="${waLink(o, nx ? FLOW[FLOW.indexOf(st) + 1] : st)}" target="_blank" rel="noopener">WhatsApp</a>
+  ${o["Map link"] ? `<a class="btn" href="${esc(o["Map link"])}" target="_blank" rel="noopener">Map</a>` : ""}
+  <select data-status-for="${esc(id)}" aria-label="Change status">${["New", "Confirmed", "Packed", "Out for delivery", "Delivered", "Cancelled"].map(s => `<option ${s === st ? "selected" : ""}>${s}</option>`).join("")}</select>
+  </div></article>` }
+
+function draw(){ const O = D.orders, open = O.filter(isOpen), td = O.filter(today);
+  const groups = { "Open": open, "New": O.filter(o => o["Status"] === "New"), "To verify": O.filter(o => /verified|Awaiting/.test(o["Payment"]) && o["Status"] !== "Cancelled"), "Delivered": O.filter(o => o["Status"] === "Delivered"), "All": O, "Messages": null };
+  const list = filter === "Messages" ? null : groups[filter];
+  $("#app").innerHTML = `<main>
+  <div class="stats"><div class="stat"><b>${td.length}</b><span>Orders today</span></div><div class="stat"><b>${rs(td.filter(o => o["Status"] !== "Cancelled").reduce((a, o) => a + Number(o["Total (₹)"] || 0), 0))}</b><span>Sales today</span></div>
+  <div class="stat"><b>${open.length}</b><span>To fulfil</span></div><div class="stat"><b>${groups["To verify"].length}</b><span>Payments to check</span></div></div>
+  <div class="bar"><div class="tabs">${Object.keys(groups).map(k => `<button class="tab" data-filter="${k}" aria-pressed="${k === filter}">${k}<em>${k === "Messages" ? D.messages.length : groups[k].length}</em></button>`).join("")}</div>
+  <div style="display:flex;gap:8px"><button class="btn" data-refresh>Refresh</button><button class="btn" data-logout>Sign out</button></div></div>
+  ${filter === "Messages" ? (D.messages.length ? D.messages.map(m => `<div class="msg"><b>${esc(m.name)}</b> · <span class="muted">${esc(m.reach)} · ${new Date(m.time).toLocaleString("en-IN", { day:"numeric", month:"short", hour:"numeric", minute:"2-digit" })}</span><p>${esc(m.message)}</p></div>`).join("") : `<div class="empty">No messages yet.</div>`)
+   : list.length ? `<div class="list">${list.map(card).join("")}</div>` : `<div class="empty">${filter === "Open" ? "All caught up. New orders appear here automatically, with a sound and a notification." : "Nothing here."}</div>`}
+  <p class="muted" style="font-size:12.5px">Keep this page open on your phone or laptop: it checks for new orders every 20 seconds. Every order is also emailed to you and saved in your Google Sheet.</p></main>` }
+
+async function setOrder(id, body){ busy[id] = true; draw(); const o = D.orders.find(x => x["Order ID"] === id);
+  try { const r = await fetch(URL_, { method:"POST", body: JSON.stringify({ action:"set", key, id, ...body }) }); const j = await r.json(); if (!j.ok) throw 0;
+    if (body.status) o["Status"] = body.status; if (body.payment) o["Payment"] = body.payment } catch(e){ alertBox("Couldn’t update " + id + ". Try again.") }
+  busy[id] = false; draw() }
+function alertBox(t){ const d = document.createElement("div"); d.className = "err"; d.style.cssText = "position:fixed;left:50%;bottom:20px;translate:-50% 0;background:var(--surface);border:1px solid var(--line);padding:12px 16px;border-radius:12px;z-index:9"; d.textContent = t; document.body.appendChild(d); setTimeout(() => d.remove(), 3000) }
+
+document.addEventListener("click", ev => { const b = ev.target.closest("button"); if (!b) return;
+  if (b.dataset.filter) { filter = b.dataset.filter; draw() }
+  else if (b.dataset.set) setOrder(b.dataset.set, b.dataset.status ? { status: b.dataset.status } : { payment: b.dataset.payment });
+  else if (b.hasAttribute("data-refresh")) load(false);
+  else if (b.hasAttribute("data-logout")) { try { localStorage.removeItem("foodlee:adminKey") } catch(e){} key = ""; clearInterval(timer); $("#live").hidden = true; err = ""; login() } });
+document.addEventListener("change", ev => { const s = ev.target.closest("select[data-status-for]"); if (s) setOrder(s.dataset.statusFor, { status: s.value }) });
+if (key && URL_) { $("#app").innerHTML = `<div class="empty" style="margin-top:20px">Loading orders…</div>`; load(true) } else login();
+</script>
+</body></html>

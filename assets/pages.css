@@ -1,0 +1,48 @@
+/* Shared style for Foodlee information pages (About, Contact, policies) */
+:root{
+  --bg:#FBF5EA; --surface:#FFFFFF; --sunk:#F3EADB; --ink:#211710; --muted:#6F5F52; --line:#E9DDC9;
+  --brand:#DA582F; --on-brand:#FFF4E2; --gold:#A87A1F; --ok:#2C7A4B;
+  --display:'Fraunces',Georgia,serif; --body:'Manrope',system-ui,-apple-system,'Segoe UI',sans-serif;
+}
+@media (prefers-color-scheme: dark){ :root{
+  --bg:#16100C; --surface:#211812; --sunk:#1B140F; --ink:#F7EDDC; --muted:#B3A394; --line:#372A20;
+  --brand:#E8693E; --gold:#E8B44A; --ok:#6FCB94; color-scheme:dark } }
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased}
+a{color:var(--brand);font-weight:700}
+a:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2.5px solid var(--brand);outline-offset:2px}
+.top{position:sticky;top:0;z-index:5;background:color-mix(in srgb,var(--bg) 88%,transparent);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+.wrap{max-width:860px;margin:0 auto;padding-left:max(18px,env(safe-area-inset-left,0px));padding-right:max(18px,env(safe-area-inset-right,0px))}
+.top .wrap{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-block:12px}
+.top img{height:34px;width:auto;display:block}
+.shop{background:var(--brand);color:var(--on-brand);text-decoration:none;border-radius:99px;padding:10px 18px;font-size:14px;font-weight:800;white-space:nowrap}
+main{padding-block:36px 56px}
+.eyebrow{font-size:12px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin:0 0 8px}
+h1{font-family:var(--display);font-weight:700;font-size:clamp(34px,7vw,52px);line-height:1.05;letter-spacing:-.02em;margin:0 0 14px;text-wrap:balance}
+h2{font-family:var(--display);font-weight:700;font-size:26px;line-height:1.15;margin:36px 0 10px;text-wrap:balance}
+h3{font-size:17px;margin:22px 0 6px}
+p,li{max-width:68ch}
+.lead{font-size:19px;color:var(--muted);margin:0 0 8px}
+.updated{color:var(--muted);font-size:14px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-top:18px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:18px 20px;min-width:0}
+.card b{display:block;font-size:17px;margin-bottom:4px}
+.card p{margin:0;color:var(--muted);font-size:15px}
+.contact-list{display:grid;gap:12px;margin:18px 0}
+.contact-list .card{display:grid;grid-template-columns:110px 1fr;gap:12px;align-items:baseline}
+.contact-list .card .lbl{font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.contact-list .card a,.contact-list .card div{word-break:break-word}
+form{display:grid;gap:12px;margin-top:14px;max-width:560px}
+label{display:grid;gap:6px;font-size:13px;font-weight:700;color:var(--muted)}
+input,textarea{font:inherit;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px;width:100%}
+button{font:inherit;cursor:pointer;border:0;background:var(--brand);color:var(--on-brand);border-radius:99px;padding:14px 22px;font-weight:800;justify-self:start}
+button[disabled]{opacity:.5;cursor:wait}
+.note{font-size:14px;color:var(--muted)}
+.ok{color:var(--ok);font-weight:700}
+.err{color:#C0392B;font-weight:700}
+footer{border-top:1px solid var(--line);padding-block:26px 40px;color:var(--muted);font-size:14px}
+footer nav{display:flex;flex-wrap:wrap;gap:8px 18px;margin-bottom:10px}
+footer nav a{color:var(--ink);font-weight:600;text-decoration:none}
+[data-hide-empty]:empty,[hidden]{display:none!important}
+@media(max-width:520px){.contact-list .card{grid-template-columns:1fr;gap:2px}}

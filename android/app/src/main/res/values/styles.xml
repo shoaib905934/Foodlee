@@ -1,0 +1,9 @@
+<resources>
+    <style name="Foodlee" parent="@android:style/Theme.Material.Light.NoActionBar">
+        <item name="android:colorPrimary">#DA582F</item>
+        <item name="android:colorAccent">#DA582F</item>
+        <item name="android:statusBarColor">#DA582F</item>
+        <item name="android:navigationBarColor">#FBF5EA</item>
+        <item name="android:windowBackground">#DA582F</item>
+    </style>
+</resources>
