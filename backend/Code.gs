@@ -23,7 +23,25 @@ function props_() { return PropertiesService.getScriptProperties(); }
 function ownerEmail_() { return props_().getProperty("NOTIFY_EMAIL") || Session.getEffectiveUser().getEmail(); }
 function json_(o) { return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON); }
 function clean_(v) { v = String(v == null ? "" : v).slice(0, 600); return /^[=+\-@]/.test(v) ? "'" + v : v; }
-function isAdmin_(key) { var k = props_().getProperty("ADMIN_KEY"); return !!k && String(key) === k; }
+function isAdmin_(key) { var k = props_().getProperty("ADMIN_KEY"); return !!k && String(key || "") === k; }
+function cache_() { return CacheService.getScriptCache(); }
+/** Allows at most `max` hits per `secs` for this name; returns false once the limit is reached. */
+function rate_(name, max, secs) { var c = cache_(), k = "r_" + Utilities.base64EncodeWebSafe(Utilities.computeDigest(Utilities.DigestAlgorithm.MD5, name)), n = Number(c.get(k) || 0);
+  if (n >= max) return false; c.put(k, String(n + 1), secs); return true; }
+/** Locks the order desk for 15 minutes after 10 wrong keys in a row, so the key can't be guessed. */
+function adminOk_(key) { var c = cache_(), bad = Number(c.get("adminBad") || 0); if (bad >= 10) return false;
+  if (isAdmin_(key)) return true; c.put("adminBad", String(bad + 1), 900); return false; }
+function newKey_() { return Utilities.getUuid().replace(/-/g, "") .slice(0, 24); }
+/** Run this if your admin key may have leaked: makes a new key, emails it to you, and the old one stops working. */
+function newAdminKey() { props_().setProperty("ADMIN_KEY", newKey_());
+  MailApp.sendEmail(ownerEmail_(), "Your new Foodlee order desk key", "Your order desk key was changed.\n\nNew admin key: " + props_().getProperty("ADMIN_KEY") +
+    "\n\nSign in again at https://www.foodlee.in/admin.html. The old key no longer works."); Logger.log("New admin key emailed to " + ownerEmail_()); }
+/** Cheapest honest total for the items we can price from the Products tab (used to catch tampered totals). */
+function minTotal_(items, sub) { var p = book_().getSheetByName("Products"), price = {}, sum = 0;
+  if (!p || p.getLastRow() < 2) return 0;
+  p.getRange(2, 1, p.getLastRow() - 1, 5).getValues().forEach(function (r) { price[String(r[0]) + "|" + String(r[3])] = Number(r[4]) || 0; });
+  (items || []).forEach(function (i) { if (i && i.pid) sum += (price[String(i.pid) + "|" + String(i.label)] || 0) * Math.max(0, Number(i.n) || 0); });
+  return Math.floor(sum * (sub ? 0.9 : 1)); }
 
 /** Run once. Creates the tabs, fills product prices and emails you the admin key. */
 function setup() {
@@ -47,7 +65,7 @@ function setup() {
   var sh1 = ss.getSheetByName("Sheet1"); if (sh1 && sh1.getLastRow() === 0 && ss.getSheets().length > 1) ss.deleteSheet(sh1);
   Logger.log("Order sheet: " + ss.getUrl());
 
-  if (!props_().getProperty("ADMIN_KEY")) props_().setProperty("ADMIN_KEY", Utilities.getUuid().replace(/-/g, "").slice(0, 16));
+  if (!props_().getProperty("ADMIN_KEY")) props_().setProperty("ADMIN_KEY", newKey_());
   MailApp.sendEmail(ownerEmail_(), "Your Foodlee order desk key",
     "Your Foodlee order desk is ready.\n\nAdmin key: " + props_().getProperty("ADMIN_KEY") +
     "\n\nOpen https://www.foodlee.in/admin.html and sign in with this key to see and manage orders.\nKeep it private: anyone with the key can see customer orders.");
@@ -86,8 +104,14 @@ function doGet(e) {
     });
     return json_({ status: out });
   }
-  if (a === "orders") {
-    if (!isAdmin_(e.parameter.key)) return json_({ ok: false, error: "key" });
+  if (a === "orders") return json_({ ok: false, error: "Use the order desk to sign in." });
+  var p = ss.getSheetByName("Products"); if (!p || p.getLastRow() < 2) return json_({ products: [] });
+  var prods = p.getRange(2, 1, p.getLastRow() - 1, 6).getValues().filter(function (r) { return r[0]; })
+    .map(function (r) { return { id: String(r[0]), size: String(r[3]), price: Number(r[4]), available: r[5] !== false && String(r[5]).toLowerCase() !== "false" }; });
+  return json_({ products: prods });
+}
+
+function deskData_(ss) {
     var sh2 = orders_(), rows = [];
     if (sh2 && sh2.getLastRow() > 1) {
       var n = Math.min(300, sh2.getLastRow() - 1), start = sh2.getLastRow() - n + 1;
@@ -98,23 +122,41 @@ function doGet(e) {
     var ms = ss.getSheetByName("Messages"), msgs = [];
     if (ms && ms.getLastRow() > 1) ms.getRange(Math.max(2, ms.getLastRow() - 49), 1, Math.min(50, ms.getLastRow() - 1), 5).getValues()
       .forEach(function (r) { msgs.push({ time: r[0] instanceof Date ? r[0].toISOString() : r[0], name: r[1], reach: r[2], message: r[3], replied: r[4] }); });
-    return json_({ ok: true, orders: rows.reverse(), messages: msgs.reverse() });
-  }
-  var p = ss.getSheetByName("Products"); if (!p || p.getLastRow() < 2) return json_({ products: [] });
-  var prods = p.getRange(2, 1, p.getLastRow() - 1, 6).getValues().filter(function (r) { return r[0]; })
-    .map(function (r) { return { id: String(r[0]), size: String(r[3]), price: Number(r[4]), available: r[5] !== false && String(r[5]).toLowerCase() !== "false" }; });
-  return json_({ products: prods });
+    return { ok: true, orders: rows.reverse(), messages: msgs.reverse() };
 }
 
+function phoneOf_(v) { return String(v || "").replace(/\D/g, "").slice(-10); }
 function doPost(e) {
+  var o; try { o = JSON.parse(e.postData.contents); } catch (x) { return json_({ ok: false, error: "bad request" }); }
+  if (!o || typeof o !== "object" || String(e.postData.contents).length > 20000) return json_({ ok: false, error: "bad request" });
+  var a = o.action || "order";
+  /* order desk: key travels only inside the request body */
+  if (a === "orders") { if (!adminOk_(o.key)) return json_({ ok: false, error: "key" }); return json_(deskData_(book_())); }
+  if (a === "set" && !adminOk_(o.key)) return json_({ ok: false, error: "key" });
+  /* spam and flood limits */
+  if (a === "order") {
+    var ph = phoneOf_(o.phone);
+    if (!/^\d{10}$/.test(ph) || !String(o.name || "").trim() || String(o.name).length > 80 || !/^\d{6}$/.test(String(o.pin || "").trim()) ||
+        String(o.addr || "").trim().length < 5 || !/^FL-\d{6}$/.test(String(o.id || "")) || !(Number(o.total) > 0 && Number(o.total) < 100000) ||
+        !Array.isArray(o.items) || !o.items.length || o.items.length > 60) return json_({ ok: false, error: "Please check your order details." });
+    if (!rate_("order:" + ph, 5, 600) || !rate_("orders:all", 80, 600)) return json_({ ok: false, error: "Too many orders right now. Please wait a few minutes or contact us." });
+  }
+  if (a === "contact") {
+    if (!String(o.message || "").trim() || String(o.message).length > 3000) return json_({ ok: false, error: "Please write a message." });
+    if (!rate_("contact:" + String(o.reach || "").toLowerCase(), 3, 3600) || !rate_("contact:all", 40, 3600)) return json_({ ok: false, error: "Too many messages. Please try again later." });
+  }
+  if ((a === "paid" || a === "paymode") && !rate_("upd:" + String(o.id), 6, 3600)) return json_({ ok: false, error: "Too many tries." });
   var lock = LockService.getScriptLock(); lock.waitLock(20000);
   try {
-    var o = JSON.parse(e.postData.contents), a = o.action || "order", ss = book_(), sh = orders_();
+    var ss = book_(), sh = orders_();
     if (a === "order") {
       if (findRow_(sh, o.id)) return json_({ ok: true, duplicate: true });
+      if (!/^https:\/\/maps\.google\.com\/\?q=-?[\d.]+,-?[\d.]+$/.test(String(o.map || ""))) o.map = "";
+      var low = minTotal_(o.items, o.sub), flag = Number(o.total) < low - 1 ? "⚠ CHECK PRICE: total ₹" + o.total + " is below the shop price ₹" + low + ". " : "";
+      if (flag) o.itemsText = flag + o.itemsText;
       sh.appendRow([new Date(), clean_(o.id), "New", clean_(o.payStatus || ""), clean_(o.pay), "", clean_(o.name), clean_(o.phone), clean_(o.itemsText),
         Number(o.total) || 0, clean_(o.area), clean_(o.addr), clean_(o.land), clean_(o.pin), clean_(o.map), clean_(o.slot), o.sub ? "Yes" : "No"]);
-      notify_("🛒 New order " + o.id + " · ₹" + o.total + " · " + (o.pay || ""),
+      notify_((flag ? "⚠ " : "") + "🛒 New order " + o.id + " · ₹" + o.total + " · " + (o.pay || ""),
         String(o.itemsText).split("; ").join("\n") + "\n\nTotal: ₹" + o.total + " (" + o.pay + ")\nPayment: " + (o.payStatus || "") +
         "\n\n" + o.name + " · " + o.phone + "\n" + o.addr + ", " + o.area + (o.land ? "\nLandmark: " + o.land : "") + "\nPincode: " + o.pin +
         (o.map ? "\nMap: " + o.map : "") + "\nDelivery: " + o.slot + (o.sub ? "\nRepeat monthly: yes" : "") + "\n\nManage: https://www.foodlee.in/admin.html");
@@ -122,6 +164,7 @@ function doPost(e) {
     }
     if (a === "paid" || a === "paymode") {
       var row = findRow_(sh, o.id); if (!row) return json_({ ok: false, error: "not found" });
+      if (phoneOf_(sh.getRange(row, COL["Phone"]).getValue()) !== phoneOf_(o.phone)) return json_({ ok: false, error: "not found" });
       if (a === "paid") {
         sh.getRange(row, COL["Payment"]).setValue("Payment sent, being verified");
         sh.getRange(row, COL["UPI ref"]).setValue(clean_(o.utr || ""));
@@ -138,7 +181,6 @@ function doPost(e) {
       return json_({ ok: true });
     }
     if (a === "set") {
-      if (!isAdmin_(o.key)) return json_({ ok: false, error: "key" });
       var r2 = findRow_(sh, o.id); if (!r2) return json_({ ok: false, error: "not found" });
       if (o.status && STATUSES.indexOf(o.status) > -1) sh.getRange(r2, COL["Status"]).setValue(o.status);
       if (o.payment && PAYMENTS.indexOf(o.payment) > -1) sh.getRange(r2, COL["Payment"]).setValue(o.payment);
@@ -146,6 +188,6 @@ function doPost(e) {
     }
     return json_({ ok: false, error: "unknown action" });
   } catch (err) {
-    return json_({ ok: false, error: String(err) });
+    return json_({ ok: false, error: "Something went wrong. Please try again." });
   } finally { lock.releaseLock(); }
 }
