@@ -46,3 +46,8 @@ footer nav{display:flex;flex-wrap:wrap;gap:8px 18px;margin-bottom:10px}
 footer nav a{color:var(--ink);font-weight:600;text-decoration:none}
 [data-hide-empty]:empty,[hidden]{display:none!important}
 @media(max-width:520px){.contact-list .card{grid-template-columns:1fr;gap:2px}}
+.motto{margin:28px 0;padding:26px 24px;border-radius:24px;background:var(--brand);color:var(--on-brand)}
+.motto p{margin:0;max-width:none}
+.motto-k{font-size:12px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;opacity:.8}
+.motto-q{font-family:var(--display);font-weight:700;font-size:clamp(24px,5vw,34px);line-height:1.15;margin:10px 0 14px!important;text-wrap:balance}
+.motto-t{font-family:var(--display);font-style:italic;font-weight:600;font-size:20px}
