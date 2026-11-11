@@ -770,20 +770,60 @@ function mountSpot(anim){ const host = $("#spot"); clearTimeout(spotT); if (!hos
   let d = host.querySelector(".spot-dots"); if (!d) { host.insertAdjacentHTML("beforeend", '<div class="spot-dots"></div>'); d = host.querySelector(".spot-dots") }
   d.innerHTML = l.length > 1 ? l.map((_, i) => `<i class="${i === spotIdx ? "on" : ""}"><b></b></i>`).join("") : "";
   if (!calm && l.length > 1) spotT = setTimeout(spotTick, 4800) }
-/* honey trail + tap ripple */
-const TR = { pts:[], rip:[], on:false };
-function trailLoop(){ const cv = $("#trail"), dpr = Math.min(devicePixelRatio || 1, 2); if (cv.width !== Math.round(innerWidth*dpr)) { cv.width = innerWidth*dpr; cv.height = innerHeight*dpr } const g = cv.getContext("2d"); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, innerWidth, innerHeight);
-  TR.pts = TR.pts.filter(p => (p.l -= .04) > 0); TR.rip = TR.rip.filter(p => (p.l -= .035) > 0);
-  TR.pts.forEach(p => { g.globalAlpha = p.l*.6; g.fillStyle = "#E8B44A"; g.beginPath(); g.ellipse(p.x, p.y + (1 - p.l)*18, 1.5 + p.l*6, 1.5 + p.l*6 + (1 - p.l)*5, 0, 0, 7); g.fill() });
-  TR.rip.forEach(p => { p.r += 3.4; g.globalAlpha = p.l; g.strokeStyle = "#E8B44A"; g.lineWidth = 3*p.l; g.beginPath(); for (let k = 0; k < 6; k++) { const q = Math.PI/3*k + Math.PI/6; g[k ? "lineTo" : "moveTo"](p.x + Math.cos(q)*p.r, p.y + Math.sin(q)*p.r) } g.closePath(); g.stroke() });
-  g.globalAlpha = 1; if (TR.pts.length || TR.rip.length) requestAnimationFrame(trailLoop); else TR.on = false }
-const trailKick = () => { if (!TR.on) { TR.on = true; requestAnimationFrame(trailLoop) } };
+/* honey touch: honeycomb bloom on tap, a sticky honey ribbon that follows your finger and drips */
+const HX = { rib:[], drops:[], cells:[], bees:[], on:false, last:null, dist:0, taps:0 };
+const HONEY = ["#F7C744", "#E8A317", "#D98A12"];
+function hexPath(g, x, y, r, rot){ g.beginPath(); for (let k = 0; k < 6; k++) { const q = Math.PI/3*k + (rot || Math.PI/6); g[k ? "lineTo" : "moveTo"](x + Math.cos(q)*r, y + Math.sin(q)*r) } g.closePath() }
+function dropPath(g, x, y, r, stretch){ const h = r*(1.3 + stretch); g.beginPath(); g.moveTo(x, y - h); g.bezierCurveTo(x + r*1.05, y - r*.2, x + r, y + r, x, y + r); g.bezierCurveTo(x - r, y + r, x - r*1.05, y - r*.2, x, y - h); g.closePath() }
+function trailLoop(){ const cv = $("#trail"), dpr = Math.min(devicePixelRatio || 1, 2);
+  if (cv.width !== Math.round(innerWidth*dpr) || cv.height !== Math.round(innerHeight*dpr)) { cv.width = innerWidth*dpr; cv.height = innerHeight*dpr }
+  const g = cv.getContext("2d"); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, innerWidth, innerHeight);
+  /* honeycomb bloom */
+  HX.cells = HX.cells.filter(c => (c.t += 1) < c.life + c.delay);
+  HX.cells.forEach(c => { const k = c.t - c.delay; if (k < 0) return; const p = Math.min(1, k/9), fade = 1 - Math.max(0, (k - 14)/(c.life - 14));
+    const s = c.r * (p < 1 ? (1 - Math.pow(1 - p, 3)) * 1.12 : 1.12 - Math.min(.12, (k - 9)*.02));
+    g.globalAlpha = Math.max(0, fade) * .9; hexPath(g, c.x, c.y, s); g.fillStyle = c.fill; g.fill();
+    g.globalAlpha = Math.max(0, fade); g.lineWidth = 2; g.strokeStyle = "#FFF4D6"; g.stroke() });
+  /* sticky ribbon */
+  HX.rib = HX.rib.filter(p => (p.l -= .028) > 0);
+  if (HX.rib.length > 1) { g.lineCap = "round"; g.lineJoin = "round";
+    for (let i = 1; i < HX.rib.length; i++) { const a = HX.rib[i-1], b = HX.rib[i], w = Math.max(1, b.w * b.l);
+      g.globalAlpha = Math.min(1, b.l*1.4); g.strokeStyle = "#D98A12"; g.lineWidth = w + 3; g.beginPath(); g.moveTo(a.x, a.y + 1.5); g.lineTo(b.x, b.y + 1.5); g.stroke();
+      g.strokeStyle = "#F2B824"; g.lineWidth = w; g.beginPath(); g.moveTo(a.x, a.y); g.lineTo(b.x, b.y); g.stroke();
+      g.strokeStyle = "rgba(255,250,225,.75)"; g.lineWidth = Math.max(1, w*.28); g.beginPath(); g.moveTo(a.x - w*.18, a.y - w*.22); g.lineTo(b.x - w*.18, b.y - w*.22); g.stroke() } }
+  /* drops: splash and drips */
+  HX.drops = HX.drops.filter(d => (d.l -= d.fade) > 0 && d.y < innerHeight + 40);
+  HX.drops.forEach(d => { if (d.hang > 0) { d.hang--; d.stretch = Math.min(1.4, d.stretch + .05) } else { d.vy += d.g; d.vx *= .98; d.x += d.vx; d.y += d.vy; d.stretch = Math.max(.15, d.stretch*.94) }
+    g.globalAlpha = Math.min(1, d.l*1.5); dropPath(g, d.x, d.y, d.r, d.stretch); const gr = g.createRadialGradient(d.x - d.r*.4, d.y - d.r*.4, 1, d.x, d.y, d.r*1.6); gr.addColorStop(0, "#FFE58A"); gr.addColorStop(.45, "#F2B824"); gr.addColorStop(1, "#C7780E"); g.fillStyle = gr; g.fill() });
+  /* bees that escape on every 5th tap */
+  HX.bees = HX.bees.filter(b => (b.t += 1) < 90);
+  HX.bees.forEach(b => { const k = b.t/90; b.x += b.vx + Math.sin(b.t*.35)*1.6; b.y += b.vy + Math.cos(b.t*.31)*1.4; g.globalAlpha = 1 - Math.max(0, (k - .7)/.3);
+    g.save(); g.translate(b.x, b.y); g.rotate(Math.atan2(b.vy, b.vx)); g.fillStyle = "rgba(255,255,255,.85)"; const fl = Math.abs(Math.sin(b.t*1.7))*5 + 2;
+    g.beginPath(); g.ellipse(-1, -5, 5, fl, -.3, 0, 7); g.fill(); g.fillStyle = "#F2B824"; g.beginPath(); g.ellipse(0, 0, 8, 5.5, 0, 0, 7); g.fill();
+    g.fillStyle = "#26180F"; g.fillRect(-3, -5.5, 2.2, 11); g.fillRect(1.5, -5.5, 2.2, 11); g.beginPath(); g.arc(7, -1, 1.2, 0, 7); g.fill(); g.restore() });
+  g.globalAlpha = 1;
+  if (HX.cells.length || HX.rib.length || HX.drops.length || HX.bees.length) requestAnimationFrame(trailLoop); else HX.on = false }
+const trailKick = () => { if (!HX.on) { HX.on = true; requestAnimationFrame(trailLoop) } };
+function honeyTap(x, y){ if (calm) return; const r = 15, d = r*1.78;
+  HX.cells.push({ x, y, r, t:0, delay:0, life:34, fill:"rgba(242,184,36,.85)" });
+  for (let k = 0; k < 6; k++) { const q = Math.PI/3*k; HX.cells.push({ x: x + Math.cos(q)*d, y: y + Math.sin(q)*d, r, t:0, delay:3 + k, life:30, fill: k % 2 ? "rgba(232,163,23,.55)" : "rgba(247,199,68,.6)" }) }
+  for (let k = 0; k < 7; k++) { const q = -Math.PI/2 + (k - 3)*.42 + (Math.random() - .5)*.2, s = 3.5 + Math.random()*3.5;
+    HX.drops.push({ x, y, vx: Math.cos(q)*s, vy: Math.sin(q)*s - 2, g:.34, r: 2.6 + Math.random()*3, l:1, fade:.016, hang:0, stretch:.3 }) }
+  if (++HX.taps % 5 === 0) for (let k = 0; k < 2; k++) HX.bees.push({ x, y, t:0, vx: (Math.random() < .5 ? -1 : 1)*(2.2 + Math.random()*1.5), vy: -1.6 - Math.random() })
+  trailKick() }
+function honeyMove(x, y, touch){ if (calm) return; const p = HX.last; const dx = p ? x - p.x : 0, dy = p ? y - p.y : 0, sp = Math.hypot(dx, dy);
+  HX.rib.push({ x, y, l:1, w: touch ? Math.max(5, 13 - sp*.25) : Math.max(3, 8 - sp*.2) }); if (HX.rib.length > (touch ? 46 : 34)) HX.rib.shift();
+  HX.dist += sp; if (HX.dist > (touch ? 70 : 140)) { HX.dist = 0; HX.drops.push({ x, y: y + 4, vx: dx*.04, vy: 0, g:.22, r: touch ? 4.2 : 3, l:1, fade:.012, hang:16, stretch:.2 }) }
+  HX.last = { x, y }; trailKick() }
+addEventListener("touchstart", e => { const t = e.touches[0]; if (!t) return; HX.last = { x:t.clientX, y:t.clientY }; honeyTap(t.clientX, t.clientY) }, { passive:true });
+addEventListener("touchmove", e => { const t = e.touches[0]; if (t) honeyMove(t.clientX, t.clientY, true) }, { passive:true });
+addEventListener("touchend", () => { HX.last = null }, { passive:true });
 let drag = null;
-addEventListener("pointerdown", ev => { if (calm) return; TR.rip.push({ x:ev.clientX, y:ev.clientY, r:6, l:1 }); trailKick();
+addEventListener("pointerdown", ev => { if (calm) return; if (ev.pointerType === "mouse") honeyTap(ev.clientX, ev.clientY);
   const tgt = ev.target.closest ? ev.target : null; if (!tgt) return; const top = tgt.closest(".sheet .top"); if (top && ev.pointerType !== "mouse" && !tgt.closest(".x")) drag = { y:ev.clientY, el:top.closest(".sheet"), dy:0 };
   spotX = tgt.closest("#spot") ? ev.clientX : null }, { passive:true });
 addEventListener("pointermove", ev => { if (drag) { drag.dy = Math.max(0, ev.clientY - drag.y); drag.el.style.transition = "none"; drag.el.style.transform = "translateY(" + drag.dy + "px)" }
-  if (!calm && ev.pointerType === "mouse") { TR.pts.push({ x:ev.clientX, y:ev.clientY, l:1 }); if (TR.pts.length > 60) TR.pts.shift(); trailKick() }
+  if (!calm && ev.pointerType === "mouse") honeyMove(ev.clientX, ev.clientY, false);
   const sp = $("#spot"); if (sp) { const b = sp.getBoundingClientRect(); sp.style.setProperty("--px", Math.max(-.5, Math.min(.5, (ev.clientX - b.left)/b.width - .5)).toFixed(3)); sp.style.setProperty("--py", Math.max(-.5, Math.min(.5, (ev.clientY - b.top)/b.height - .5)).toFixed(3)) } }, { passive:true });
 function endDrag(ev){ if (drag) { const d = drag; drag = null; if (d.dy > 110) { S.swiped = true; setTimeout(() => S.swiped = false, 60); S.sheet = null; S.planSheet = null; render() } else { d.el.style.transition = "transform .35s cubic-bezier(.2,1.5,.4,1)"; d.el.style.transform = "" } }
   if (spotX != null && ev.clientX != null) { const dx = ev.clientX - spotX; spotX = null; if (Math.abs(dx) > 40) { const n = spotList().length; spotIdx = spotIdx + (dx < 0 ? 1 : n - 1); S.swiped = true; setTimeout(() => S.swiped = false, 60); mountSpot(true) } } }
@@ -810,6 +850,20 @@ function moment(p, el){ if (calm || !p) return; const host = $("#moment");
     host.appendChild(f); setTimeout(() => f.remove(), 3500); return }
   const kind = p.cat === "snacks" ? "snack" : p.cat === "oils" ? "press" : p.cat === "spices" ? "mortar" : "mill", sc = SCENES[kind](p);
   host.querySelectorAll(".scene").forEach(n => n.remove()); const d = document.createElement("div"); d.className = "scene " + kind; d.style.setProperty("--dur", sc.dur + "ms"); d.innerHTML = sc.html + `<span class="cap">${sc.cap}</span>`; host.appendChild(d); setTimeout(() => d.remove(), sc.dur + 350) }
+/* ---------- address from GPS (OpenStreetMap) ---------- */
+const AREAS = ["Gachibowli","Madhapur","Kondapur","Hitech City","Jubilee Hills","Banjara Hills","Kukatpally","Secunderabad","Begumpet"];
+async function reverseGeocode(lat, lon){
+  try { const r = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1&accept-language=en`, { headers: { "Accept": "application/json" } });
+    if (!r.ok) throw 0; const j = await r.json(), a = j.address || {};
+    const local = a.neighbourhood || a.suburb || a.quarter || a.residential || a.city_district || "";
+    const street = [a.house_number, a.building, a.road, local].filter(Boolean);
+    const all = [a.neighbourhood, a.suburb, a.quarter, a.city_district, a.road, j.display_name].join(" ").toLowerCase();
+    const area = AREAS.find(x => all.includes(x.toLowerCase()) || (x === "Hitech City" && /hi-?tech|hitec/.test(all))) || "Other";
+    return { addr: [...new Set(street)].join(", ") || (j.display_name || "").split(",").slice(0, 3).join(","), pin: (a.postcode || "").replace(/\D/g, "").slice(0, 6), area, land: a.amenity || a.shop || S.form.land || "" };
+  } catch(e){}
+  try { const r = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=en`); const j = await r.json();
+    const area = AREAS.find(x => (j.locality || "").toLowerCase().includes(x.toLowerCase())) || "Other";
+    return { addr: [j.locality, j.city].filter(Boolean).join(", "), pin: (j.postcode || "").replace(/\D/g, "").slice(0, 6), area } } catch(e){ return null } }
 let lastTotal = 0;
 function afterRender(r){
   const act = document.querySelector('nav a[data-nav="' + r + '"]'), blob = $("#blob");
@@ -840,8 +894,14 @@ document.addEventListener("click", ev => { if (S.swiped) { S.swiped = false; ev.
   if (a === "close") { if (ev.target.closest(".sheet") && !ev.target.closest("[data-act='close']:not(.scrim)")) return; const cid = S.sheet; vt(() => { S.sheet = null; S.planSheet = null; S.vtBack = cid; render() }); return }
   if (a === "locate") { if (!navigator.geolocation) { S.locMsg = "This device can’t share location. Type your address instead."; return render() }
     S.locBusy = true; S.locMsg = ""; render();
-    navigator.geolocation.getCurrentPosition(pos => { S.locBusy = false; S.form.loc = pos.coords.latitude.toFixed(6) + "," + pos.coords.longitude.toFixed(6); store.set("form", S.form); toast("Location pinned"); render() },
-      () => { S.locBusy = false; S.locMsg = "Couldn’t get your location here. It works once the app is live on its own web address; type your address for now."; render() }, { enableHighAccuracy:true, timeout:10000 }); return }
+    navigator.geolocation.getCurrentPosition(async pos => {
+      const lat = pos.coords.latitude, lon = pos.coords.longitude; S.form.loc = lat.toFixed(6) + "," + lon.toFixed(6);
+      const got = await reverseGeocode(lat, lon); S.locBusy = false;
+      if (got) { Object.assign(S.form, got); S.locMsg = ""; toast("Address filled from your location. Add your flat number.") }
+      else { toast("Location pinned"); S.locMsg = "Pinned your location. Type your flat and street below." }
+      store.set("form", S.form); render(); const f = $("#f-addr"); if (f && got) { f.focus(); f.setSelectionRange(0, 0) } },
+      err => { S.locBusy = false; S.locMsg = err && err.code === 1 ? "Location is blocked. Allow location for this site in your browser settings, or type your address." : "Couldn’t get your location. Check that location is on, or type your address."; render() },
+      { enableHighAccuracy:true, timeout:15000, maximumAge:60000 }); return }
   if (a === "payclose") { if (ev.target.closest(".sheet") && !ev.target.closest("[data-act='payclose']:not(.scrim)")) return; S.pay = null; return render() }
   if (a === "payopen") { S.pay = id; return render() }
   if (a === "copyupi") { (navigator.clipboard ? navigator.clipboard.writeText(CFG.upiId) : Promise.reject()).then(() => toast("UPI ID copied"), () => toast(CFG.upiId)); return }
