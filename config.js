@@ -5,7 +5,7 @@
  */
 window.FOODLEE = {
   // Orders, prices and contact messages go to your Google Sheet through this link (see backend/SETUP.md)
-  sheetUrl: "https://script.google.com/macros/s/AKfycbzMSsoHeUBatAN5_VLiF-N1dsgM7yb1FMACiOhIwShW_NuL6K78VirRvvDSqKScy66wzQ/exec",
+  sheetUrl: "",
 
   // WhatsApp Business number: country code + number, digits only, e.g. "919876543210"
   whatsapp: "",
