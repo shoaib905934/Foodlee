@@ -5,6 +5,7 @@ and shown on your order desk at www.foodlee.in/admin.html.
 
 1. Go to sheets.google.com and create a blank sheet named **Foodlee Order Desk**.
 2. Open **Extensions → Apps Script**. Delete what is there and paste everything from `backend/Code.gs`. Save.
+   If Apps Script shows "Page not found" (this happens when several Google accounts are signed in), create a new project at script.google.com instead, paste the code, and set `SHEET_ID` to the long code in your sheet's web address.
 3. In the function menu at the top choose **setup** and press **Run**.
    Google asks for permission: choose your account → Advanced → Go to project → **Allow**.
    You get an email titled "Your Foodlee order desk key".

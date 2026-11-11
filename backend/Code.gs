@@ -13,6 +13,10 @@ const PAYMENTS = ["Awaiting UPI payment", "Payment sent, being verified", "Paid"
 const ORDER_HEAD = ["Time", "Order ID", "Status", "Payment", "Pay with", "UPI ref", "Name", "Phone", "Items", "Total (₹)",
   "Area", "Address", "Landmark", "Pincode", "Map link", "Delivery slot", "Repeat monthly"];
 const COL = {}; ORDER_HEAD.forEach(function (h, i) { COL[h] = i + 1; });
+// Sheet to use. Leave "" when this script is opened from the sheet (Extensions ▸ Apps Script);
+// set it to the sheet's ID (the long code in its web address) when the script is a standalone project.
+const SHEET_ID = "";
+function book_() { return SHEET_ID ? SpreadsheetApp.openById(SHEET_ID) : SpreadsheetApp.getActiveSpreadsheet(); }
 const SEED = [["h0", "Honey shots", "Honey Garlic", "1 shot", 30, true], ["h1", "Honey shots", "Honey Ginger", "1 shot", 30, true], ["h2", "Honey shots", "Honey Anjeer", "1 shot", 35, true], ["h3", "Honey shots", "Honey Dates", "1 shot", 30, true], ["h4", "Honey shots", "Honey Almond", "1 shot", 35, true], ["h5", "Honey shots", "Honey Ashwagandha", "1 shot", 35, true], ["h6", "Honey shots", "Glow", "1 shot", 35, true], ["h7", "Honey shots", "Gut", "1 shot", 35, true], ["h8", "Honey shots", "Sleep", "1 shot", 35, true], ["h9", "Honey shots", "Hydrate", "1 shot", 30, true], ["h10", "Honey shots", "Focus", "1 shot", 35, true], ["h11", "Honey shots", "Immune", "1 shot", 30, true], ["h12", "Honey shots", "Recover", "1 shot", 30, true], ["hstam", "Honey shots", "Stamina", "1 shot", 35, true], ["h14", "Honey shots", "Salted Caramel", "1 shot", 35, true], ["h15", "Honey shots", "Kesar Pista Kulfi", "1 shot", 45, true], ["h16", "Honey shots", "Choco Hazelnut", "1 shot", 45, true], ["h17", "Honey shots", "Masala Chai", "1 shot", 30, true], ["h18", "Honey shots", "Thandai", "1 shot", 40, true], ["h19", "Honey shots", "Paan Mukhwas", "1 shot", 35, true], ["h20", "Honey shots", "Peanut Chikki", "1 shot", 30, true], ["h21", "Honey shots", "Chatpata Mango", "1 shot", 35, true], ["h22", "Honey shots", "Cinnamon Roll", "1 shot", 30, true], ["h23", "Honey shots", "Coconut Ladoo", "1 shot", 35, true], ["h24", "Honey shots", "Spiced Cookie", "1 shot", 30, true], ["sx26", "Snacks", "Peri Peri Makhana", "60 g", 99, true], ["sx26", "Snacks", "Peri Peri Makhana", "150 g", 229, true], ["sx27", "Snacks", "Jowar Millet Puffs", "50 g", 60, true], ["sx27", "Snacks", "Jowar Millet Puffs", "5 pack", 279, true], ["sx28", "Snacks", "Date and Nut Bites", "6 pieces", 149, true], ["sx28", "Snacks", "Date and Nut Bites", "12 pieces", 279, true], ["sx29", "Snacks", "Ragi Chips", "75 g", 70, true], ["sx29", "Snacks", "Ragi Chips", "4 pack", 259, true], ["sx30", "Snacks", "Honey Trail Mix", "100 g", 179, true], ["sx30", "Snacks", "Honey Trail Mix", "250 g", 419, true], ["sx31", "Atta and dals", "Fresh Chakki Atta", "1 kg", 65, true], ["sx31", "Atta and dals", "Fresh Chakki Atta", "5 kg", 310, true], ["sx31", "Atta and dals", "Fresh Chakki Atta", "10 kg", 599, true], ["sx32", "Atta and dals", "Jowar Atta", "1 kg", 85, true], ["sx32", "Atta and dals", "Jowar Atta", "5 kg", 399, true], ["sx33", "Atta and dals", "Ragi Atta", "1 kg", 90, true], ["sx33", "Atta and dals", "Ragi Atta", "5 kg", 425, true], ["sx34", "Atta and dals", "Multigrain Atta", "1 kg", 95, true], ["sx34", "Atta and dals", "Multigrain Atta", "5 kg", 449, true], ["sx35", "Atta and dals", "Unpolished Toor Dal", "500 g", 99, true], ["sx35", "Atta and dals", "Unpolished Toor Dal", "1 kg", 189, true], ["sx36", "Atta and dals", "Unpolished Moong Dal", "500 g", 89, true], ["sx36", "Atta and dals", "Unpolished Moong Dal", "1 kg", 169, true], ["sx37", "Spices and paste", "Guntur Mirchi Powder", "200 g", 95, true], ["sx37", "Spices and paste", "Guntur Mirchi Powder", "500 g", 219, true], ["sx38", "Spices and paste", "Haldi Powder", "200 g", 75, true], ["sx38", "Spices and paste", "Haldi Powder", "500 g", 175, true], ["sx39", "Spices and paste", "Dhaniya Powder", "200 g", 60, true], ["sx39", "Spices and paste", "Dhaniya Powder", "500 g", 139, true], ["sx40", "Spices and paste", "Ginger Garlic Paste", "200 g", 55, true], ["sx40", "Spices and paste", "Ginger Garlic Paste", "500 g", 125, true], ["ox41", "Pressed oils", "Groundnut Oil", "500 ml", 180, true], ["ox41", "Pressed oils", "Groundnut Oil", "1 L", 340, true], ["ox41", "Pressed oils", "Groundnut Oil", "5 L", 1599, true], ["ox42", "Pressed oils", "Sesame Oil", "500 ml", 250, true], ["ox42", "Pressed oils", "Sesame Oil", "1 L", 480, true], ["ox43", "Pressed oils", "Coconut Oil", "500 ml", 260, true], ["ox43", "Pressed oils", "Coconut Oil", "1 L", 499, true], ["ox44", "Pressed oils", "Safflower Oil", "1 L", 360, true], ["ox44", "Pressed oils", "Safflower Oil", "5 L", 1699, true], ["ox45", "Pressed oils", "Mustard Oil", "1 L", 320, true]];
 
 function props_() { return PropertiesService.getScriptProperties(); }
@@ -23,7 +27,7 @@ function isAdmin_(key) { var k = props_().getProperty("ADMIN_KEY"); return !!k &
 
 /** Run once. Creates the tabs, fills product prices and emails you the admin key. */
 function setup() {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var ss = book_();
   var p = ss.getSheetByName("Products") || ss.insertSheet("Products");
   if (p.getLastRow() === 0) {
     p.getRange(1, 1, 1, 6).setValues([["ID (do not change)", "Shelf", "Product", "Size", "Price (₹)", "Available"]]).setFontWeight("bold");
@@ -41,6 +45,7 @@ function setup() {
   var m = ss.getSheetByName("Messages") || ss.insertSheet("Messages");
   if (m.getLastRow() === 0) { m.getRange(1, 1, 1, 5).setValues([["Time", "Name", "Phone or email", "Message", "Replied?"]]).setFontWeight("bold"); m.setFrozenRows(1); }
   var sh1 = ss.getSheetByName("Sheet1"); if (sh1 && sh1.getLastRow() === 0 && ss.getSheets().length > 1) ss.deleteSheet(sh1);
+  Logger.log("Order sheet: " + ss.getUrl());
 
   if (!props_().getProperty("ADMIN_KEY")) props_().setProperty("ADMIN_KEY", Utilities.getUuid().replace(/-/g, "").slice(0, 16));
   MailApp.sendEmail(ownerEmail_(), "Your Foodlee order desk key",
@@ -64,7 +69,7 @@ function notify_(subject, body) {
   }
 }
 
-function orders_() { return SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Orders"); }
+function orders_() { return book_().getSheetByName("Orders"); }
 function findRow_(sh, id) {
   if (sh.getLastRow() < 2) return 0;
   var ids = sh.getRange(2, COL["Order ID"], sh.getLastRow() - 1, 1).getValues();
@@ -73,7 +78,7 @@ function findRow_(sh, id) {
 }
 
 function doGet(e) {
-  var a = e.parameter.action || "products", ss = SpreadsheetApp.getActiveSpreadsheet();
+  var a = e.parameter.action || "products", ss = book_();
   if (a === "status") {
     var want = String(e.parameter.ids || "").split(",").filter(String), out = {}, sh = orders_();
     if (sh && sh.getLastRow() > 1) sh.getRange(2, 1, sh.getLastRow() - 1, ORDER_HEAD.length).getValues().forEach(function (r) {
@@ -104,7 +109,7 @@ function doGet(e) {
 function doPost(e) {
   var lock = LockService.getScriptLock(); lock.waitLock(20000);
   try {
-    var o = JSON.parse(e.postData.contents), a = o.action || "order", ss = SpreadsheetApp.getActiveSpreadsheet(), sh = orders_();
+    var o = JSON.parse(e.postData.contents), a = o.action || "order", ss = book_(), sh = orders_();
     if (a === "order") {
       if (findRow_(sh, o.id)) return json_({ ok: true, duplicate: true });
       sh.appendRow([new Date(), clean_(o.id), "New", clean_(o.payStatus || ""), clean_(o.pay), "", clean_(o.name), clean_(o.phone), clean_(o.itemsText),
