@@ -1,4 +1,5 @@
 name: Build Android app
+# Signed with the private Foodlee key from the ANDROID_SIGNING secret.
 
 on:
   push:
